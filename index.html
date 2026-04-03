@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UTM-tag maker – KdG</title>
+<style>
+  :root {
+    --mint: #a7d3c4;
+    --mint-hover: #5aab96;
+    --mint-light: #e8f5f1;
+    --mint-dark: #3d8a74;
+    --text: #1a1a1a;
+    --text-muted: #555;
+    --border: #d0e8e0;
+    --error: #c0392b;
+    --white: #ffffff;
+    --bg: #f7fbf9;
+    --radius: 6px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Helvetica Neue, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  header {
+    border-left: 4px solid var(--mint-hover);
+    padding-left: 16px;
+    margin-bottom: 36px;
+  }
+
+  header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  header p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field-header {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  label {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .required {
+    color: var(--error);
+    font-size: 0.8rem;
+  }
+
+  .optional {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 400;
+  }
+
+  .hint {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  input[type="text"],
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.92rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--white);
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+  }
+
+  input[type="text"]:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--mint-hover);
+    box-shadow: 0 0 0 3px rgba(90,171,150,0.15);
+  }
+
+  input.invalid, select.invalid {
+    border-color: var(--error);
+  }
+
+  .error-msg {
+    font-size: 0.8rem;
+    color: var(--error);
+    display: none;
+  }
+
+  .error-msg.visible {
+    display: block;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 4px 0;
+  }
+
+  button.generate {
+    width: 100%;
+    padding: 13px;
+    background: var(--mint-hover);
+    color: var(--white);
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+  }
+
+  button.generate:hover {
+    background: var(--mint-dark);
+  }
+
+  button.generate:active {
+    transform: scale(0.99);
+  }
+
+  .result-box {
+    display: none;
+    margin-top: 24px;
+    background: var(--mint-light);
+    border: 1px solid var(--mint);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .result-box.visible {
+    display: block;
+  }
+
+  .result-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--mint-dark);
+    margin-bottom: 10px;
+  }
+
+  .result-url {
+    font-size: 0.88rem;
+    word-break: break-all;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    line-height: 1.6;
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+  }
+
+  .result-url .base-url { color: var(--text-muted); }
+  .result-url .param { color: var(--mint-dark); font-weight: 600; }
+  .result-url .value { color: #1a5940; }
+
+  button.copy {
+    margin-top: 12px;
+    padding: 9px 18px;
+    background: var(--mint-hover);
+    color: var(--white);
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  button.copy:hover { background: var(--mint-dark); }
+
+  .copy-confirm {
+    display: inline-block;
+    font-size: 0.82rem;
+    color: var(--mint-dark);
+    margin-left: 10px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .copy-confirm.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>UTM-tag maker</h1>
+    <p>Genereer een correcte UTM-link voor campagnes op kdg.be</p>
+  </header>
+
+  <div class="card">
+
+    <!-- URL -->
+    <div class="field">
+      <div class="field-header">
+        <label for="url">Finale URL</label>
+        <span class="required">*</span>
+      </div>
+      <span class="hint">De volledige pagina-URL, bv. https://www.kdg.be/opleidingen/...</span>
+      <input type="text" id="url" value="https://www.kdg.be/" placeholder="https://www.kdg.be/...">
+      <span class="error-msg" id="url-error">Vul een geldige URL in (start met https://).</span>
+    </div>
+
+    <!-- Medium -->
+    <div class="field">
+      <div class="field-header">
+        <label for="medium">Medium</label>
+        <span class="required">*</span>
+      </div>
+      <span class="hint">Het kanaal waarmee je naar de website leidt (bv. social, email, print …)</span>
+      <select id="medium">
+        <option value="">– Kies medium –</option>
+        <option>affiliate</option>
+        <option>cpc</option>
+        <option>display</option>
+        <option>email</option>
+        <option>pers</option>
+        <option>print</option>
+        <option>social</option>
+      </select>
+      <span class="error-msg" id="medium-error">Kies een medium.</span>
+    </div>
+
+    <!-- Source -->
+    <div class="field">
+      <div class="field-header">
+        <label for="source">Source</label>
+        <span class="required">*</span>
+      </div>
+      <span class="hint">Het vertrekpunt/de bron van de link (bv. instagram, google, folder …)</span>
+      <select id="source">
+        <option value="">– Kies source –</option>
+        <option>bachelor-and-more</option>
+        <option>bachelor-studies</option>
+        <option>brief</option>
+        <option>digitale-schermen-campus</option>
+        <option>educations-com</option>
+        <option>facebook</option>
+        <option>flyer</option>
+        <option>folder</option>
+        <option>gevelbelettering</option>
+        <option>google</option>
+        <option>instagram</option>
+        <option>intranet</option>
+        <option>jobat</option>
+        <option>knack</option>
+        <option>linkedin</option>
+        <option>mailchimp</option>
+        <option>notaboekje</option>
+        <option>outlook</option>
+        <option>poster</option>
+        <option>sharpspring</option>
+        <option>snapchat</option>
+        <option>spotify</option>
+        <option>studyportals-com</option>
+        <option>tiktok</option>
+        <option>youtube</option>
+      </select>
+      <span class="error-msg" id="source-error">Kies een source.</span>
+    </div>
+
+    <!-- Campaign -->
+    <div class="field">
+      <div class="field-header">
+        <label for="campaign">Campaign</label>
+        <span class="required">*</span>
+      </div>
+      <span class="hint">Voor welke campagne wordt deze link gebruikt?</span>
+      <select id="campaign">
+        <option value="">– Kies campagne –</option>
+        <option>academy</option>
+        <option>alumni</option>
+        <option>ato</option>
+        <option>campagne</option>
+        <option>chat</option>
+        <option>digital-business</option>
+        <option>gebruiksvoorwaarden-privacy</option>
+        <option>herorienteren-januari</option>
+        <option>herorienteren-september</option>
+        <option>hypertargeting</option>
+        <option>infoavond-ouders</option>
+        <option>infodag</option>
+        <option>infodag-1</option>
+        <option>infodag-2</option>
+        <option>infodag-3</option>
+        <option>infodag-4</option>
+        <option>inschrijven</option>
+        <option>intranet</option>
+        <option>nieuws</option>
+        <option>onboarding</option>
+        <option>open-lessen</option>
+        <option>opleiding</option>
+        <option>opleiding-mit</option>
+        <option>opleiding-weg</option>
+        <option>opleiding-wet</option>
+        <option>opleidingen-sea</option>
+        <option>opleidingen-videos</option>
+        <option>proclamatie</option>
+        <option>research</option>
+        <option>shareable</option>
+        <option>sidin</option>
+        <option>strategische-interne-communicatie</option>
+        <option>studiekeuze-hulp</option>
+        <option>takeovers</option>
+        <option>vacature-hr</option>
+        <option>werkveld</option>
+      </select>
+      <span class="error-msg" id="campaign-error">Kies een campagne.</span>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Content -->
+    <div class="field">
+      <div class="field-header">
+        <label for="content">Content</label>
+        <span class="required">*</span>
+      </div>
+      <span class="hint">Korte beschrijving van de inhoud. Geen spaties — gebruik koppeltekens (bv. <em>5-tips-voor-een-goede-studiekeuze</em>).</span>
+      <input type="text" id="content" placeholder="bv. 5-tips-voor-een-goede-studiekeuze">
+      <span class="error-msg" id="content-error">Vul content in zonder spaties.</span>
+    </div>
+
+    <!-- Term -->
+    <div class="field">
+      <div class="field-header">
+        <label for="term">Term</label>
+        <span class="optional">(optioneel)</span>
+      </div>
+      <span class="hint">Enkel bij <strong>zoekadvertenties</strong> — zoekwoorden of doelgroepen. Geen spaties.</span>
+      <input type="text" id="term" placeholder="bv. hogeschool-antwerpen">
+      <span class="error-msg" id="term-error">Geen spaties toegestaan in term.</span>
+    </div>
+
+    <button class="generate" onclick="generate()">Genereer UTM-link</button>
+
+  </div>
+
+  <!-- Result -->
+  <div class="result-box" id="result-box">
+    <div class="result-label">Jouw UTM-link</div>
+    <div class="result-url" id="result-url"></div>
+    <button class="copy" onclick="copyUrl()">Kopieer link</button>
+    <span class="copy-confirm" id="copy-confirm">✓ Gekopieerd!</span>
+  </div>
+
+</div>
+
+<script>
+  let generatedUrl = '';
+
+  // Live sanitize: replace spaces with hyphens in text fields
+  ['content', 'term'].forEach(id => {
+    document.getElementById(id).addEventListener('input', function() {
+      const pos = this.selectionStart;
+      const cleaned = this.value.replace(/ /g, '-');
+      if (cleaned !== this.value) {
+        this.value = cleaned;
+        this.setSelectionRange(pos, pos);
+      }
+    });
+  });
+
+  function validate() {
+    let valid = true;
+
+    const url = document.getElementById('url').value.trim();
+    const urlErr = document.getElementById('url-error');
+    const urlInput = document.getElementById('url');
+    if (!url || !url.startsWith('http')) {
+      urlInput.classList.add('invalid');
+      urlErr.classList.add('visible');
+      valid = false;
+    } else {
+      urlInput.classList.remove('invalid');
+      urlErr.classList.remove('visible');
+    }
+
+    ['medium', 'source', 'campaign'].forEach(id => {
+      const el = document.getElementById(id);
+      const err = document.getElementById(id + '-error');
+      if (!el.value) {
+        el.classList.add('invalid');
+        err.classList.add('visible');
+        valid = false;
+      } else {
+        el.classList.remove('invalid');
+        err.classList.remove('visible');
+      }
+    });
+
+    const content = document.getElementById('content').value.trim();
+    const contentErr = document.getElementById('content-error');
+    const contentInput = document.getElementById('content');
+    if (!content || /\s/.test(content)) {
+      contentInput.classList.add('invalid');
+      contentErr.classList.add('visible');
+      valid = false;
+    } else {
+      contentInput.classList.remove('invalid');
+      contentErr.classList.remove('visible');
+    }
+
+    const term = document.getElementById('term').value.trim();
+    const termErr = document.getElementById('term-error');
+    const termInput = document.getElementById('term');
+    if (term && /\s/.test(term)) {
+      termInput.classList.add('invalid');
+      termErr.classList.add('visible');
+      valid = false;
+    } else {
+      termInput.classList.remove('invalid');
+      termErr.classList.remove('visible');
+    }
+
+    return valid;
+  }
+
+  function generate() {
+    if (!validate()) return;
+
+    const url = document.getElementById('url').value.trim();
+    const medium = document.getElementById('medium').value;
+    const source = document.getElementById('source').value;
+    const campaign = document.getElementById('campaign').value;
+    const content = document.getElementById('content').value.trim();
+    const term = document.getElementById('term').value.trim();
+
+    const separator = url.includes('?') ? '&' : '?';
+    let result = url + separator
+      + 'utm_source=' + source
+      + '&utm_medium=' + medium
+      + '&utm_campaign=' + campaign
+      + '&utm_content=' + content;
+
+    if (term) result += '&utm_term=' + term;
+
+    generatedUrl = result;
+
+    // Highlighted display
+    const base = url + separator;
+    let html = `<span class="base-url">${escHtml(base)}</span>`;
+    const params = [
+      ['utm_source', source],
+      ['utm_medium', medium],
+      ['utm_campaign', campaign],
+      ['utm_content', content],
+    ];
+    if (term) params.push(['utm_term', term]);
+
+    params.forEach((p, i) => {
+      html += (i > 0 ? '&amp;' : '')
+        + `<span class="param">${p[0]}</span>=<span class="value">${escHtml(p[1])}</span>`;
+    });
+
+    document.getElementById('result-url').innerHTML = html;
+    document.getElementById('result-box').classList.add('visible');
+    document.getElementById('result-box').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    document.getElementById('copy-confirm').classList.remove('show');
+  }
+
+  function copyUrl() {
+    if (!generatedUrl) return;
+    navigator.clipboard.writeText(generatedUrl).then(() => {
+      const c = document.getElementById('copy-confirm');
+      c.classList.add('show');
+      setTimeout(() => c.classList.remove('show'), 2500);
+    });
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+</script>
+</body>
+</html>
